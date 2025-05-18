@@ -13,9 +13,9 @@ $contacts = [];
 if ($search) {
     $like_search = "%$search%";
 
-    $stmt = $pdo->prepare("SELECT id, name, email, role, is_active FROM users WHERE name LIKE ? OR email LIKE ? ORDER BY created_at DESC");
-    $stmt->execute([$like_search, $like_search]);
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $pdo->prepare("SELECT id, name, email, role, is_active FROM users WHERE (name LIKE ? OR email LIKE ?) AND email_verified = 1 ORDER BY created_at DESC");
+$stmt->execute([$like_search, $like_search]);
+$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $stmt = $pdo->prepare("SELECT c.*, u.name AS assigned_user_name, t.name AS teacher_name FROM contacts c LEFT JOIN users u ON c.user_id = u.id LEFT JOIN users t ON c.teacher_id = t.id WHERE c.name LIKE ? OR c.email LIKE ? OR c.phone LIKE ? ORDER BY c.created_at DESC");
     $stmt->execute([$like_search, $like_search, $like_search]);

@@ -97,9 +97,12 @@ if (empty($errors)) {
 
             <button class="w-full  text-white py-3 rounded-lg font-semibold" type="submit" style="background-color: #B85042">Login</button>
         </form>
-        <p class="mt-6 text-center text-gray-600">
-            Don't have an account? <a href="register.php" class=" font-semibold " style="color: #B85042">Sign Up</a>.
-        </p>
+<p class="mt-6 text-center text-gray-600">
+    Don't have an account? <a href="register.php" class="font-semibold" style="color: #B85042">Sign Up</a>.
+</p>
+<p class="mt-2 text-center">
+    <a href="forgot_password.php" class="font-semibold" style="color: #B85042">Forgot password?</a>
+</p>
     </div>
 </body>
 </html>

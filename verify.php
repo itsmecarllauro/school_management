@@ -14,6 +14,9 @@ if (!isset($_SESSION['email'])) {
 
 $email = $_SESSION['email'];
 
+// Determine verification context: 'email_verification' or 'forgot_password'
+$verification_context = $_SESSION['verification_context'] ?? 'email_verification';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_code = sanitize_input($_POST['verification_code'] ?? '');
 
@@ -26,16 +29,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user) {
             $errors[] = 'User not found.';
-        } elseif ($user['email_verified']) {
-            $errors[] = 'Account already verified. Please login.';
-        } elseif ($user['verification_code'] !== $input_code) {
-            $errors[] = 'Incorrect verification code.';
         } else {
+            if ($verification_context === 'email_verification') {
+                if ($user['email_verified']) {
+                    $errors[] = 'Account already verified. Please login.';
+                } elseif ($user['verification_code'] !== $input_code) {
+                    $errors[] = 'Incorrect verification code.';
+                } else {
+                    $stmt = $pdo->prepare("UPDATE users SET email_verified = 1, verification_code = NULL WHERE id = ?");
+                    $stmt->execute([$user['id']]);
+                    unset($_SESSION['email']);
+                    unset($_SESSION['verification_context']);
+                    $success = 'Your account has been verified. You can now <a href="login.php" class="text-blue-600 ">login</a>.';
+                }
+            } elseif ($verification_context === 'forgot_password') {
+                // Check code in password_resets table
+                $stmt2 = $pdo->prepare("SELECT token, expires_at FROM password_resets WHERE user_id = ?");
+                $stmt2->execute([$user['id']]);
+                $reset = $stmt2->fetch(PDO::FETCH_ASSOC);
 
-            $stmt = $pdo->prepare("UPDATE users SET email_verified = 1, verification_code = NULL WHERE id = ?");
-            $stmt->execute([$user['id']]);
-            unset($_SESSION['email']);
-            $success = 'Your account has been verified. You can now <a href="login.php" class="text-blue-600 ">login</a>.';
+                if (!$reset || $reset['token'] !== $input_code) {
+                    $errors[] = 'Incorrect verification code.';
+                } elseif (strtotime($reset['expires_at']) < time()) {
+                    $errors[] = 'Verification code has expired. Please request a new one.';
+                } else {
+                    // Verification successful for forgot password
+                    unset($_SESSION['verification_context']);
+                    $_SESSION['password_reset_user_id'] = $user['id'];
+                    unset($_SESSION['email']);
+                    // Delete the used code
+                    $stmt3 = $pdo->prepare("DELETE FROM password_resets WHERE user_id = ?");
+                    $stmt3->execute([$user['id']]);
+                    // Redirect to reset password page
+                    header('Location: reset_password.php');
+                    exit;
+                }
+            } else {
+                $errors[] = 'Invalid verification context.';
+            }
         }
     }
 }
@@ -82,11 +113,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
         <?php if (!$success): ?>
-        <form method="POST" action="verify.php" novalidate>
+        <form id="verifyForm" method="POST" action="verify.php" novalidate>
             <label class="block mb-2 font-semibold text-gray-700" for="verification_code">Enter 6-digit Verification Code</label>
             <input class="w-full p-3 mb-8 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-2 " type="text" id="verification_code" name="verification_code" maxlength="6" pattern="\d{6}" required style="--tw-ring-color: #B85042;" />
-            <button class="w-full  text-white py-3 rounded-lg font-semibold " type="submit" style="background-color: #B85042">Verify</button>
+            <button id="verifyButton" class="w-full  text-white py-3 rounded-lg font-semibold " type="submit" style="background-color: #B85042">Verify</button>
+            <div id="loading" class="hidden mt-4 text-center text-gray-700">Verifying code...</div>
+            <div id="successMessage" class="hidden mt-4 text-center text-green-600 font-semibold">Verification successful!</div>
         </form>
+        <script>
+            const form = document.getElementById('verifyForm');
+            const button = document.getElementById('verifyButton');
+            const loading = document.getElementById('loading');
+            const successMessage = document.getElementById('successMessage');
+            form.addEventListener('submit', function() {
+                button.disabled = true;
+                loading.classList.remove('hidden');
+            });
+            <?php if ($success): ?>
+                loading.classList.add('hidden');
+                successMessage.classList.remove('hidden');
+            <?php endif; ?>
+        </script>
         <?php endif; ?>
     </div>
 </body>

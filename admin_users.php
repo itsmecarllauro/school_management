@@ -86,13 +86,13 @@ if (isset($_GET['return'])) {
 
 if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     $edit_user_id = (int)$_GET['edit'];
-    $stmt = $pdo->prepare("SELECT id, name, email, role, is_active FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, name, email, role, is_active FROM users WHERE id = ? AND email_verified = 1");
     $stmt->execute([$edit_user_id]);
     $edit_user = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 // Fetch all users except current admin
-$stmt = $pdo->prepare("SELECT id, name, email, role, is_active, created_at FROM users WHERE id != ? ORDER BY created_at DESC");
+$stmt = $pdo->prepare("SELECT id, name, email, role, is_active, created_at FROM users WHERE id != ? AND email_verified = 1 AND role != 'admin' AND email != 'admin' ORDER BY created_at DESC");
 $stmt->execute([$_SESSION['user_id']]);
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
