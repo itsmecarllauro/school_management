@@ -17,37 +17,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Password is required.';
     }
 
-if (empty($errors)) {
-    $stmt = $pdo->prepare("SELECT id, name, email, password_hash, email_verified, role FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (empty($errors)) {
+        $stmt = $pdo->prepare("SELECT id, name, email, password_hash, email_verified, role, is_active FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$user) {
-        $errors[] = 'Invalid email or password.';
-    } elseif (!$user['email_verified']) {
-        $errors[] = 'Account not verified. Please check your email for the verification code.';
-    } elseif (!password_verify($password, $user['password_hash'])) {
-        $errors[] = 'Invalid email or password.';
-    } else {
-        // Login successful
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_name'] = $user['name'];
-        $_SESSION['user_role'] = $user['role'];
-
-        // Log the login action
-        log_action($pdo, $user['id'], 'User logged in');
-
-        // Role-based redirection
-        if ($user['role'] === 'admin') {
-            header('Location: admin_dashboard.php');
-        } elseif ($user['role'] === 'teacher') {
-            header('Location: teacher_dashboard.php');
+        if (!$user) {
+            $errors[] = 'Invalid email or password.';
+        } elseif (!$user['email_verified']) {
+            $errors[] = 'Account not verified. Please check your email for the verification code.';
+        } elseif (!$user['is_active']) {
+            $errors[] = 'Your account is deactivated. Please contact the administrator.';
+        } elseif (!password_verify($password, $user['password_hash'])) {
+            $errors[] = 'Invalid email or password.';
         } else {
-            header('Location: dashboard.php');
+            // Login successful
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = $user['role'];
+
+            // Log the login action
+            log_action($pdo, $user['id'], 'User logged in');
+
+            // Role-based redirection
+            if ($user['role'] === 'admin') {
+                header('Location: admin_dashboard.php');
+            } elseif ($user['role'] === 'teacher') {
+                header('Location: teacher_dashboard.php');
+            } else {
+                header('Location: dashboard.php');
+            }
+            exit;
         }
-        exit;
     }
-}
 }
 ?>
 
