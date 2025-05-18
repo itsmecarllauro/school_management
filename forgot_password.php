@@ -66,7 +66,7 @@ function send_email($to_email, $to_name, $subject, $body) {
         $mail->SMTPSecure = SMTP_SECURE;
         $mail->Port = SMTP_PORT;
 
-        $mail->setFrom(SMTP_USERNAME, 'School Management');
+        $mail->setFrom(SMTP_USERNAME, 'Forgot Password Verification Code');
         $mail->addAddress($to_email, $to_name);
         $mail->isHTML(true);
         $mail->Subject = $subject;
