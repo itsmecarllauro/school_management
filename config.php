@@ -1,9 +1,9 @@
 <?php
 // Database configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'school_management');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', 'sql311.infinityfree.com');
+define('DB_NAME', 'if0_38791448_school_management');
+define('DB_USER', 'if0_38791448');
+define('DB_PASS', '230fJaKloYb');
 
 // SMTP configuration
 define('SMTP_HOST', 'smtp.gmail.com');
